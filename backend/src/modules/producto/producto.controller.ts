@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Patch, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Patch, Body, Param } from '@nestjs/common';
 import { ProductoService } from './producto.service';
 import { CreateProductoDto, UpdateProductoDto } from './producto.dto';
 
@@ -7,8 +7,8 @@ export class ProductoController {
   constructor(private readonly service: ProductoService) {}
 
   @Get()
-  findAll(@Query('idEmpresa') idEmpresa?: string) {
-    return this.service.findAll(idEmpresa);
+  findAll() {
+    return this.service.findAll();
   }
 
   @Get(':id')

@@ -12,11 +12,8 @@ export class ProductoService {
     private readonly repo: Repository<Producto>,
   ) {}
 
-  async findAll(idEmpresa?: string): Promise<Producto[]> {
-    const where = idEmpresa ? { idEmpresa } : {};
+  async findAll(): Promise<Producto[]> {
     return this.repo.find({
-      where,
-      relations: ['categoriaRel', 'empresa'],
       order: { nombre: 'ASC' },
     });
   }
@@ -24,19 +21,17 @@ export class ProductoService {
   async findOne(id: string): Promise<Producto> {
     const producto = await this.repo.findOne({
       where: { idProducto: id },
-      relations: ['categoriaRel', 'empresa', 'stocks'],
     });
     if (!producto) throw new NotFoundException(`Producto ${id} no encontrado`);
     return producto;
   }
 
   async create(dto: CreateProductoDto): Promise<Producto> {
-    // Verificar código único dentro de la empresa
     const existing = await this.repo.findOne({
-      where: { codigo: dto.codigo, idEmpresa: dto.idEmpresa },
+      where: { codigo: dto.codigo },
     });
     if (existing) {
-      throw new BadRequestException(`Ya existe un producto con el código ${dto.codigo} en esta empresa`);
+      throw new BadRequestException(`Ya existe un producto con el código ${dto.codigo}`);
     }
     const producto = this.repo.create({
       idProducto: uuid(),
@@ -50,10 +45,10 @@ export class ProductoService {
     const producto = await this.findOne(id);
     if (dto.codigo) {
       const existing = await this.repo.findOne({
-        where: { codigo: dto.codigo, idEmpresa: producto.idEmpresa },
+        where: { codigo: dto.codigo },
       });
       if (existing && existing.idProducto !== id) {
-        throw new BadRequestException(`Ya existe un producto con el código ${dto.codigo} en esta empresa`);
+        throw new BadRequestException(`Ya existe un producto con el código ${dto.codigo}`);
       }
     }
     Object.assign(producto, dto);

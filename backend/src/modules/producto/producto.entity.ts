@@ -1,7 +1,4 @@
-import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { Empresa } from '../empresa/empresa.entity';
-import { Categoria } from '../categoria/categoria.entity';
-import { Stock } from '../stock/stock.entity';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity('producto')
 export class Producto {
@@ -26,20 +23,8 @@ export class Producto {
   @Column({ type: 'boolean', default: true })
   activo: boolean;
 
-  @Column({ type: 'varchar', length: 36 })
-  idEmpresa: string;
-
-  @Column({ type: 'varchar', length: 36, nullable: true })
-  idCategoria: string;
-
-  @ManyToOne(() => Empresa, (e) => e.productos)
-  @JoinColumn({ name: 'idEmpresa' })
-  empresa: Empresa;
-
-  @ManyToOne(() => Categoria, (c) => c.productos, { nullable: true })
-  @JoinColumn({ name: 'idCategoria' })
-  categoriaRel: Categoria;
-
-  @OneToMany(() => Stock, (s) => s.producto)
-  stocks: Stock[];
+  // Campos de compatibilidad para referencias tipadas en entidades legacy.
+  empresa?: unknown;
+  categoriaRel?: unknown;
+  stocks?: unknown[];
 }

@@ -4,8 +4,8 @@
   "description": "Backend NestJS para sistema multiempresa",
   "scripts": {
     "build": "nest build",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
+    "start": "ts-node src/main.ts",
+    "start:dev": "ts-node src/main.ts",
     "start:prod": "node dist/main"
   },
   "dependencies": {

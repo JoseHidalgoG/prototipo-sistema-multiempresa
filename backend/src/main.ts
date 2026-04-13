@@ -22,6 +22,6 @@ async function bootstrap() {
   );
 
   await app.listen(3001);
-  console.log('🚀 Backend corriendo en http://localhost:3001');
+  console.log('Backend corriendo en http://localhost:3001');
 }
 bootstrap();

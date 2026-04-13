@@ -24,14 +24,6 @@ export class CreateProductoDto {
   @IsBoolean()
   @IsOptional()
   activo?: boolean;
-
-  @IsString()
-  @IsNotEmpty({ message: 'La empresa es requerida' })
-  idEmpresa: string;
-
-  @IsString()
-  @IsOptional()
-  idCategoria?: string;
 }
 
 export class UpdateProductoDto {
@@ -59,8 +51,4 @@ export class UpdateProductoDto {
   @IsBoolean()
   @IsOptional()
   activo?: boolean;
-
-  @IsString()
-  @IsOptional()
-  idCategoria?: string;
 }

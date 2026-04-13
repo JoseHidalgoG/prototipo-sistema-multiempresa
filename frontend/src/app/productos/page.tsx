@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useEmpresa } from '@/lib/EmpresaContext';
-import { productoApi, categoriaApi } from '@/lib/api';
+import { productoApi } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import PageHeader from '@/components/ui/PageHeader';
 import Modal from '@/components/ui/Modal';
@@ -13,16 +12,8 @@ interface Producto {
   tipo: string;
   codigo: string;
   precioVenta: number;
-  marca: string;
+  marca?: string;
   activo: boolean;
-  idEmpresa: string;
-  idCategoria: string | null;
-  categoriaRel?: { idCategoria: string; categoria: string } | null;
-}
-
-interface Categoria {
-  idCategoria: string;
-  categoria: string;
 }
 
 const emptyForm = {
@@ -32,14 +23,11 @@ const emptyForm = {
   precioVenta: 0,
   marca: '',
   activo: true,
-  idCategoria: '',
 };
 
 export default function ProductosPage() {
-  const { empresaActual } = useEmpresa();
   const { toast } = useToast();
   const [productos, setProductos] = useState<Producto[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
@@ -55,21 +43,15 @@ export default function ProductosPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const loadData = useCallback(async () => {
-    if (!empresaActual) return;
     setLoading(true);
     try {
-      const [prods, cats] = await Promise.all([
-        productoApi.getAll(empresaActual.idEmpresa),
-        categoriaApi.getAll(empresaActual.idEmpresa),
-      ]);
-      setProductos(prods);
-      setCategorias(cats);
+      setProductos(await productoApi.getAll());
     } catch (err: any) {
       toast(err.message || 'Error cargando productos', 'error');
     } finally {
       setLoading(false);
     }
-  }, [empresaActual]);
+  }, [toast]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -113,7 +95,6 @@ export default function ProductosPage() {
       precioVenta: p.precioVenta,
       marca: p.marca || '',
       activo: p.activo,
-      idCategoria: p.idCategoria || '',
     });
     setErrors({});
     setModalOpen(true);
@@ -132,14 +113,14 @@ export default function ProductosPage() {
 
   // Save (create or update)
   const handleSave = async () => {
-    if (!validate() || !empresaActual) return;
+    if (!validate()) return;
     setSaving(true);
     try {
       if (editingId) {
         await productoApi.update(editingId, form);
         toast('Producto actualizado correctamente');
       } else {
-        await productoApi.create({ ...form, idEmpresa: empresaActual.idEmpresa });
+        await productoApi.create(form);
         toast('Producto creado correctamente');
       }
       setModalOpen(false);
@@ -234,7 +215,6 @@ export default function ProductosPage() {
                   <th>Código</th>
                   <th>Nombre</th>
                   <th>Tipo</th>
-                  <th>Categoría</th>
                   <th>Marca</th>
                   <th className="text-right">Precio</th>
                   <th>Estado</th>
@@ -253,7 +233,6 @@ export default function ProductosPage() {
                       </button>
                     </td>
                     <td className="text-gray-600">{p.tipo}</td>
-                    <td className="text-gray-600">{p.categoriaRel?.categoria || '—'}</td>
                     <td className="text-gray-600">{p.marca || '—'}</td>
                     <td className="text-right font-semibold text-surface-800 font-mono">
                       RD${p.precioVenta.toLocaleString('es-DO', { minimumFractionDigits: 2 })}
@@ -318,15 +297,6 @@ export default function ProductosPage() {
             <label className="form-label">Marca</label>
             <input className="form-input" value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} placeholder="Ej: Samsung" />
           </div>
-          <div>
-            <label className="form-label">Categoría</label>
-            <select className="form-select" value={form.idCategoria} onChange={(e) => setForm({ ...form, idCategoria: e.target.value })}>
-              <option value="">— Sin categoría —</option>
-              {categorias.map((c) => (
-                <option key={c.idCategoria} value={c.idCategoria}>{c.categoria}</option>
-              ))}
-            </select>
-          </div>
           <div className="flex items-center gap-3 pt-5">
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} />
@@ -369,33 +339,11 @@ export default function ProductosPage() {
                 <p className="text-xs text-gray-500 font-medium mb-1">Marca</p>
                 <p className="font-semibold text-surface-800">{selectedProducto.marca || '—'}</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs text-gray-500 font-medium mb-1">Categoría</p>
-                <p className="font-semibold text-surface-800">{selectedProducto.categoriaRel?.categoria || 'Sin categoría'}</p>
-              </div>
               <div className="bg-brand-50 rounded-xl p-4 ring-1 ring-brand-200">
                 <p className="text-xs text-brand-600 font-medium mb-1">Precio de Venta</p>
                 <p className="font-bold text-brand-800 text-lg font-mono">RD${selectedProducto.precioVenta.toLocaleString('es-DO', { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
-            {/* Stock info if available */}
-            {selectedProducto.stocks && selectedProducto.stocks.length > 0 && (
-              <div>
-                <h4 className="font-display font-bold text-surface-800 mb-2">Stock por Sucursal</h4>
-                <table className="data-table">
-                  <thead><tr><th>Sucursal</th><th className="text-right">Disponible</th><th className="text-right">Mínimo</th></tr></thead>
-                  <tbody>
-                    {selectedProducto.stocks.map((s: any) => (
-                      <tr key={s.idStock}>
-                        <td>{s.sucursal?.nombre || s.idSucursal}</td>
-                        <td className="text-right font-semibold">{s.cantidadDisponible}</td>
-                        <td className="text-right text-gray-500">{s.cantidadMinima}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
             <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
               <button className="btn-secondary" onClick={() => { setDetailOpen(false); openEdit(selectedProducto); }}>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
